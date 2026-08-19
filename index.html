@@ -1,78 +1,79 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yorumlara Yönlendiriliyor...</title>
-<style>
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    background: #0f1115;
-    color: #e8e8e8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-    margin: 0;
-    text-align: center;
-    padding: 24px;
-    box-sizing: border-box;
-  }
-  .spinner {
-    width: 36px; height: 36px;
-    border: 3px solid #333;
-    border-top-color: #4f8cff;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 16px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  p { color: #aaa; font-size: 0.95rem; }
-  a { color: #4f8cff; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Yorum Yönlendirmesi</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #e0e0e0;
+            border-top: 5px solid #4285F4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 24px;
+            background-color: #4285F4;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-  <div>
+
     <div class="spinner"></div>
-    <p id="msg">Yorumlar sayfasına yönlendiriliyor...</p>
-    <p style="font-size:0.8rem;">
-      Otomatik açılmazsa <a id="fallbackLink" href="#">buraya dokunun</a>.
-    </p>
-  </div>
+    <h2>Google Yorumlarına Yönlendiriliyorsunuz...</h2>
+    <p>Sayfa otomatik açılmazsa aşağıdaki butona tıklayın:</p>
+    <a id="redirect-btn" class="btn" href="#">Yorum Yap</a>
 
-<script>
-  // Hedef: işletmenin Google Maps yorum sayfası
-  var MAPS_URL = "https://www.google.com/maps/place//data=!4m4!3m3!1s0x14cab1e03d80ca15:0x16d3f91d2e655866!9m1!1b1";
+    <script>
+        // Hedef linkler
+        const dataPath = "0x14cab1e03d80ca15:0x16d3f91d2e655866!9m1!1b1";
+        
+        // Android için doğrudan Google Maps uygulamasını açan Intent URL'si
+        const androidUrl = "intent://www.google.com/maps/place//data=!4m4!3m3!1s" + dataPath + "#Intent;scheme=https;package=com.google.android.apps.maps;end";
+        
+        // iOS ve Masaüstü için standart HTTPS linki (Yorum sekmesini direkt açar)
+        const universalUrl = "https://www.google.com/maps/place//data=!4m4!3m3!1s" + dataPath;
 
-  // Chrome'un iOS URL şeması: https:// -> googlechromes://
-  var CHROME_URL = MAPS_URL.replace(/^https:\/\//, "googlechromes://");
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        const isAndroid = /android/i.test(userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
 
-  document.getElementById("fallbackLink").href = MAPS_URL;
+        const btn = document.getElementById("redirect-btn");
 
-  var ua = navigator.userAgent || "";
-  var isIOS = /iPhone|iPad|iPod/i.test(ua);
-
-  function fallbackToNormalUrl() {
-    window.location.replace(MAPS_URL);
-  }
-
-  if (isIOS) {
-    // Chrome'u açmayı dene; başarısız olursa (Chrome yüklü değilse)
-    // sayfa görünür kalır ve kısa süre sonra normal linke düşer.
-    var fallbackTimer = setTimeout(fallbackToNormalUrl, 600);
-
-    // Sayfa arka plana gidiyorsa (Chrome açıldıysa) fallback'i iptal et.
-    document.addEventListener("visibilitychange", function () {
-      if (document.hidden) {
-        clearTimeout(fallbackTimer);
-      }
-    });
-
-    window.location.href = CHROME_URL;
-  } else {
-    // Android ve diğer platformlarda doğrudan normal linke git.
-    fallbackToNormalUrl();
-  }
-</script>
+        if (isAndroid) {
+            btn.href = androidUrl;
+            window.location.href = androidUrl;
+        } else {
+            // iOS ve diğer cihazlar için
+            btn.href = universalUrl;
+            window.location.href = universalUrl;
+        }
+    </script>
 </body>
 </html>
