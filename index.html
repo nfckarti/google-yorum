@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google Yorum NFC Yöneticisi</title>
     <script>
-        // GitHub Pages yönlendirme sırasında parametrelerin silinmesini önleyen koruma
+        // Trailing slash koruması
         const path = window.location.pathname;
         if (!path.endsWith('/') && !path.includes('.')) {
             window.location.replace(window.location.origin + path + '/' + window.location.search);
@@ -43,26 +43,10 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             text-align: center;
         }
-        h1, h2 {
-            margin-top: 0;
-            color: var(--text);
-        }
-        p {
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.5;
-        }
-        .input-group {
-            margin: 20px 0;
-            text-align: left;
-        }
-        label {
-            display: block;
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--text);
-        }
+        h1, h2 { margin-top: 0; color: var(--text); }
+        p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+        .input-group { margin: 20px 0; text-align: left; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
         textarea {
             width: 100%;
             padding: 12px 14px;
@@ -74,9 +58,7 @@
             transition: border-color 0.2s;
             resize: vertical;
         }
-        textarea:focus {
-            border-color: var(--primary);
-        }
+        textarea:focus { border-color: var(--primary); }
         button, .btn {
             background-color: var(--primary);
             color: white;
@@ -92,9 +74,7 @@
             display: inline-block;
             box-sizing: border-box;
         }
-        button:hover, .btn:hover {
-            background-color: var(--primary-hover);
-        }
+        button:hover, .btn:hover { background-color: var(--primary-hover); }
         .result-box {
             display: none;
             margin-top: 24px;
@@ -113,27 +93,16 @@
             border: 1px solid var(--border);
             margin: 10px 0;
         }
-        .btn-copy {
-            background-color: #34a853;
-            margin-top: 8px;
-        }
-        .btn-copy:hover {
-            background-color: #2d9249;
-        }
-        .qr-container {
-            text-align: center;
-            margin-top: 16px;
-        }
+        .btn-copy { background-color: #34a853; margin-top: 8px; }
+        .btn-copy:hover { background-color: #2d9249; }
+        .qr-container { text-align: center; margin-top: 16px; }
         .qr-container img {
             border-radius: 8px;
             border: 1px solid var(--border);
             background: white;
             padding: 8px;
         }
-
-        #redirect-view, #generator-view {
-            display: none;
-        }
+        #redirect-view, #generator-view { display: none; }
         .spinner {
             width: 48px;
             height: 48px;
@@ -143,10 +112,7 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -156,17 +122,17 @@
         <div class="spinner"></div>
         <h2>Google Haritalar Açılıyor...</h2>
         <p>Uygulama otomatik açılmazsa aşağıdaki butona tıklayın:</p>
-        <a id="redirect-btn" class="btn" href="#">Haritada / Yorumlarda Aç</a>
+        <a id="redirect-btn" class="btn" href="#">Yorum Yaz / Haritada Aç</a>
     </div>
 
     <!-- 2. LİNK OLUŞTURUCU PANELİ (Siz Açtığınızda) -->
     <div id="generator-view" class="container">
         <h1>NFC Link Oluşturucu</h1>
-        <p>Google Maps uygulamasından aldığınız linki veya metni yapıştırıp NFC kartına yazılacak linki üretin.</p>
+        <p>Google Maps linkini veya paylaşılan metni yapıştırıp NFC kartı için akıllı linki üretin.</p>
 
         <div class="input-group">
             <label for="maps-input">Google Maps Paylaşım Linki veya Metni:</label>
-            <textarea id="maps-input" rows="3" placeholder="https://maps.app.goo.gl/..."></textarea>
+            <textarea id="maps-input" rows="3" placeholder="https://maps.app.goo.gl/... veya Google Maps URL"></textarea>
         </div>
         <button onclick="generateNFCLink()">NFC Linki Üret</button>
 
@@ -184,14 +150,13 @@
     </div>
 
     <script>
-        // Bölü işareti garantili taban domain
         let basePath = window.location.pathname;
         if (!basePath.endsWith('/')) {
             basePath += '/';
         }
         const currentDomain = window.location.origin + basePath;
 
-        // --- YÖNLENDİRME KONTROLÜ ---
+        // --- YÖNLENDİRME MODU ---
         const urlParams = new URLSearchParams(window.location.search);
         const dataParam = urlParams.get('data');
         const placeIdParam = urlParams.get('placeid');
@@ -204,37 +169,30 @@
             document.getElementById('redirect-view').style.display = 'block';
             document.getElementById('generator-view').style.display = 'none';
 
-            let androidTarget = "";
-            let appleTarget = "";
+            let targetUrl = "";
+            const isAndroid = /android/i.test(navigator.userAgent || navigator.vendor || window.opera);
 
             if (dataParam) {
-                androidTarget = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
-                appleTarget = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1`;
+                // Uzun data linki -> Android'de doğrudan Intent ile Yorum sekmesini aç
+                if (isAndroid) {
+                    targetUrl = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+                } else {
+                    targetUrl = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1`;
+                }
             } else if (placeIdParam) {
-                androidTarget = `intent://search.google.com/local/writereview?placeid=${placeIdParam}#Intent;scheme=https;package=com.google.android.apps.maps;end`;
-                appleTarget = `https://search.google.com/local/writereview?placeid=${placeIdParam}`;
+                targetUrl = `https://search.google.com/local/writereview?placeid=${placeIdParam}`;
             } else if (cidParam) {
-                androidTarget = `intent://maps.google.com/?cid=${cidParam}#Intent;scheme=https;package=com.google.android.apps.maps;end`;
-                appleTarget = `https://maps.google.com/?cid=${cidParam}`;
+                targetUrl = `https://maps.google.com/?cid=${cidParam}`;
             } else if (urlParam) {
-                const cleanUrl = urlParam.replace(/^https?:\/\//i, '');
-                androidTarget = `intent://${cleanUrl}#Intent;scheme=https;package=com.google.android.apps.maps;end`;
-                appleTarget = `https://${cleanUrl}`;
+                // Kısa linkler (maps.app.goo.gl) -> Her iki işletim sisteminde de doğrudan HTTPS linki açılır, Play Store hatası vermez
+                targetUrl = `https://${decodeURIComponent(urlParam)}`;
             }
 
-            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            const isAndroid = /android/i.test(userAgent);
             const btn = document.getElementById("redirect-btn");
-
-            if (isAndroid) {
-                btn.href = androidTarget;
-                window.location.href = androidTarget;
-            } else {
-                btn.href = appleTarget;
-                window.location.href = appleTarget;
-            }
+            btn.href = targetUrl;
+            window.location.href = targetUrl;
         } else {
-            // Parametre yoksa Link Oluşturucu Panelini Göster
+            // Parametre yok -> Panel Aç
             document.getElementById('generator-view').style.display = 'block';
             document.getElementById('redirect-view').style.display = 'none';
         }
