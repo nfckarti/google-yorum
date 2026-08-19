@@ -48,6 +48,7 @@
             cursor: pointer;
         }
         button:hover { background: #1557b0; }
+        button:disabled { background: #9aa0a6; cursor: not-allowed; }
         .result {
             display: none;
             margin-top: 20px;
@@ -74,46 +75,95 @@
 <body>
 
     <div class="card">
-        <h2>NFC Yorum Linki Oluşturucu</h2>
-        <p style="font-size: 13px; color: #5f6368;">Google Haritalar'dan aldığınız linki (veya 0x... kodunu) yapıştırın:</p>
+        <h2>NFC Yorum Linki Üretici</h2>
+        <p style="font-size: 13px; color: #5f6368;">Haritalar uygulamasından <b>Paylaş</b> diyerek kopyaladığınız linki yapıştırın:</p>
         
-        <textarea id="input-link" rows="4" placeholder="https://www.google.com/maps/place/..."></textarea>
-        <button onclick="generateLink()">NFC Linki Üret</button>
+        <textarea id="input-link" rows="3" placeholder="https://maps.app.goo.gl/..."></textarea>
+        <button id="btn-submit" onclick="processAndGenerate()">Otomatik Dönüştür ve NFC Linki Üret</button>
 
         <div id="result-box" class="result">
-            <label style="font-weight: bold; font-size: 13px;">NFC Kartına Yazılacak Link:</label>
+            <label style="font-weight: bold; font-size: 13px; color: #174ea6;">✅ Yorum Sekmesi Kodu Çıkarıldı!</label>
             <div id="output-url" class="url-box"></div>
-            <button class="btn-copy" onclick="copyUrl()">Linki Kopyala</button>
+            <button class="btn-copy" onclick="copyUrl()">NFC Linkini Kopyala</button>
             <br>
             <img id="qr-img" src="" width="150" height="150" alt="QR Kod">
         </div>
     </div>
 
     <script>
-        function generateLink() {
+        async function processAndGenerate() {
             const input = document.getElementById('input-link').value.trim();
-            if (!input) return alert("Lütfen bir link yapıştırın!");
+            const btn = document.getElementById('btn-submit');
+            if (!input) return alert("Lütfen Haritalar'dan aldığınız linki yapıştırın!");
 
-            // 0x...:0x... kimliğini yakala
-            const match = input.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/) || input.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
+            // Metin içerisinden URL'yi ayıkla
+            const urlMatch = input.match(/(https?:\/\/[^\s]+)/);
+            const targetUrl = urlMatch ? urlMatch[0] : input;
 
-            if (!match) {
-                return alert("Linkin içinde '0x...:0x...' işletme kodu bulunamadı. Lütfen Haritalar'daki tam linki yapıştırın.");
+            btn.disabled = true;
+            btn.innerText = "İşletme Yorum Kodu Çözümleniyor...";
+
+            let hexData = null;
+
+            // 1. Zaten 0x...:0x... kodu içeriyor mu?
+            const directMatch = targetUrl.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/) || targetUrl.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
+            if (directMatch) {
+                hexData = directMatch[1] || directMatch[0];
+            } else {
+                // 2. Kısa linki arka planda çöz (3 farklı proxy katmanı)
+                hexData = await resolveShortLink(targetUrl);
             }
 
-            const dataId = match[1] || match[0];
-            // Yönlendirici index.html'in tam adresi
-            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '');
-            const finalUrl = `${baseUrl}?d=${dataId}`;
+            btn.disabled = false;
+            btn.innerText = "Otomatik Dönüştür ve NFC Linki Üret";
 
-            document.getElementById('output-url').innerText = finalUrl;
-            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalUrl)}`;
-            document.getElementById('result-box').style.display = 'block';
+            if (hexData) {
+                const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '');
+                const finalNfcUrl = `${baseUrl}?d=${hexData}`;
+
+                document.getElementById('output-url').innerText = finalNfcUrl;
+                document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalNfcUrl)}`;
+                document.getElementById('result-box').style.display = 'block';
+            } else {
+                alert("Link otomatik çözümlenemedi. Lütfen internet bağlantınızı kontrol edin.");
+            }
+        }
+
+        async function resolveShortLink(url) {
+            // Katman 1: Unshorten API
+            try {
+                const res1 = await fetch(`https://unshorten.me/json/${encodeURIComponent(url)}`);
+                const data1 = await res1.json();
+                if (data1 && data1.resolved_url) {
+                    const m = data1.resolved_url.match(/0x[0-9a-fA-F]{14,18}:0x[0-9a-fA-F]{14,18}/);
+                    if (m) return m[0];
+                }
+            } catch (e) {}
+
+            // Katman 2: CorsProxy
+            try {
+                const res2 = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+                const html2 = await res2.text();
+                const m2 = html2.match(/0x[0-9a-fA-F]{14,18}:0x[0-9a-fA-F]{14,18}/);
+                if (m2) return m2[0];
+            } catch (e) {}
+
+            // Katman 3: AllOrigins
+            try {
+                const res3 = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+                const data3 = await res3.json();
+                if (data3 && data3.contents) {
+                    const m3 = data3.contents.match(/0x[0-9a-fA-F]{14,18}:0x[0-9a-fA-F]{14,18}/);
+                    if (m3) return m3[0];
+                }
+            } catch (e) {}
+
+            return null;
         }
 
         function copyUrl() {
             const text = document.getElementById('output-url').innerText;
-            navigator.clipboard.writeText(text).then(() => alert("Kopyalandı!"));
+            navigator.clipboard.writeText(text).then(() => alert("NFC Linki panoya kopyalandı! Kartınıza yazabilirsiniz."));
         }
     </script>
 </body>
