@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yönlendiriliyorsunuz...</title>
+    <title>Google Yorumları</title>
     <script>
-        // Sayfa yüklenmesini bile beklemeden <head> içinde anında çalışır
         const urlParams = new URLSearchParams(window.location.search);
         const dataId = urlParams.get('d');
 
@@ -14,17 +13,15 @@
             let target = "";
 
             if (isAndroid) {
-                // ANDROID: Haritalar uygulamasını açar ve doğrudan Yorumlar sekmesini gösterir
+                // ANDROID: Google Haritalar uygulamasında DOĞRUDAN YORUMLAR sekmesini açar
                 target = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
             } else {
-                // APPLE (iOS): Safari ve Haritalar'da yorumlar sekmesini açar
+                // APPLE (iOS): Safari ve Haritalar'da Yorumlar sekmesini açar
                 target = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`;
             }
 
-            // Sayfayı anında yönlendir (history tutmadan doğrudan fırlar)
             window.location.replace(target);
         } else {
-            // Eğer parametresiz açıldıysa doğrudan yönetim paneline gönder
             window.location.replace("admin.html");
         }
     </script>
@@ -41,8 +38,8 @@
             text-align: center;
         }
         .spinner {
-            width: 40px;
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border: 4px solid #e0e0e0;
             border-top: 4px solid #1a73e8;
             border-radius: 50%;
@@ -51,7 +48,6 @@
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         a {
-            display: inline-block;
             margin-top: 15px;
             padding: 10px 20px;
             background: #1a73e8;
@@ -66,16 +62,15 @@
     <div class="spinner"></div>
     <h3>Google Haritalar Açılıyor...</h3>
     <p>Açılmazsa aşağıdaki butona dokunun:</p>
-    <a id="fallback-btn" href="#">Yorumları Aç</a>
+    <a id="btn" href="#">Yorumları Aç</a>
 
     <script>
-        // Yedek buton linki tanımlama
         if (dataId) {
             const isAndroid = /android/i.test(navigator.userAgent);
             const target = isAndroid 
                 ? `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`
                 : `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`;
-            document.getElementById('fallback-btn').href = target;
+            document.getElementById('btn').href = target;
         }
     </script>
 </body>
