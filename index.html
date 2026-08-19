@@ -3,232 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Yorum NFC Yöneticisi</title>
+    <title>Yönlendiriliyorsunuz...</title>
     <script>
-        const path = window.location.pathname;
-        if (!path.endsWith('/') && !path.includes('.')) {
-            window.location.replace(window.location.origin + path + '/' + window.location.search);
+        // Sayfa yüklenmesini bile beklemeden <head> içinde anında çalışır
+        const urlParams = new URLSearchParams(window.location.search);
+        const dataId = urlParams.get('d');
+
+        if (dataId) {
+            const isAndroid = /android/i.test(navigator.userAgent);
+            let target = "";
+
+            if (isAndroid) {
+                // ANDROID: Haritalar uygulamasını açar ve doğrudan Yorumlar sekmesini gösterir
+                target = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+            } else {
+                // APPLE (iOS): Safari ve Haritalar'da yorumlar sekmesini açar
+                target = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`;
+            }
+
+            // Sayfayı anında yönlendir (history tutmadan doğrudan fırlar)
+            window.location.replace(target);
+        } else {
+            // Eğer parametresiz açıldıysa doğrudan yönetim paneline gönder
+            window.location.replace("admin.html");
         }
     </script>
     <style>
-        :root {
-            --primary: #1a73e8;
-            --primary-hover: #1557b0;
-            --bg: #f8f9fa;
-            --card: #ffffff;
-            --text: #202124;
-            --text-secondary: #5f6368;
-            --border: #dadce0;
-        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-        .container {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 520px;
-            width: 100%;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            height: 100vh;
+            margin: 0;
+            background: #f8f9fa;
             text-align: center;
         }
-        h1, h2 { margin-top: 0; color: var(--text); }
-        p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
-        .guide-box {
-            background: #e8f0fe;
-            border: 1px solid #d2e3fc;
-            border-radius: 8px;
-            padding: 12px;
-            text-align: left;
-            font-size: 13px;
-            color: #174ea6;
-            margin-bottom: 20px;
-        }
-        .guide-box ol { margin: 8px 0 0 18px; padding: 0; }
-        .input-group { margin: 20px 0; text-align: left; }
-        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
-        textarea {
-            width: 100%;
-            padding: 12px 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 14px;
-            box-sizing: border-box;
-            outline: none;
-            transition: border-color 0.2s;
-            resize: vertical;
-        }
-        textarea:focus { border-color: var(--primary); }
-        button, .btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.2s;
-            text-decoration: none;
-            display: inline-block;
-            box-sizing: border-box;
-        }
-        button:hover, .btn:hover { background-color: var(--primary-hover); }
-        .result-box {
-            display: none;
-            margin-top: 24px;
-            padding: 20px;
-            background-color: #f1f3f4;
-            border-radius: 12px;
-            text-align: left;
-        }
-        .result-url {
-            word-break: break-all;
-            background: white;
-            padding: 10px;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 13px;
-            border: 1px solid var(--border);
-            margin: 10px 0;
-        }
-        .btn-copy { background-color: #34a853; margin-top: 8px; }
-        .btn-copy:hover { background-color: #2d9249; }
-        .qr-container { text-align: center; margin-top: 16px; }
-        .qr-container img {
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: white;
-            padding: 8px;
-        }
-        #redirect-view, #generator-view { display: none; }
         .spinner {
-            width: 48px;
-            height: 48px;
-            border: 5px solid #e0e0e0;
-            border-top: 5px solid var(--primary);
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #1a73e8;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
+            margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        a {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #1a73e8;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
-
-    <!-- 1. MÜŞTERİ YÖNLENDİRME EKRANI (NFC Okutulunca) -->
-    <div id="redirect-view" class="container">
-        <div class="spinner"></div>
-        <h2>Google Haritalar Uygulaması Açılıyor...</h2>
-        <p>Doğrudan açılmazsa aşağıdaki butona tıklayın:</p>
-        <a id="redirect-btn" class="btn" href="#">Yorum Yaz / Puan Ver</a>
-    </div>
-
-    <!-- 2. LİNK OLUŞTURUCU PANELİ -->
-    <div id="generator-view" class="container">
-        <h1>NFC Google Yorum Linki Üretici</h1>
-        
-        <div class="guide-box">
-            <b>💡 Doğrudan Uygulama İçi Yıldız Ekranı İçin:</b>
-            <ol>
-                <li>Tarayıcıda Google Haritalar'ı açıp işletmeyi bulun.</li>
-                <li>Adres çubuğundaki uzun linki (veya 0x...:0x... kodunu) kopyalayın.</li>
-                <li>Aşağıdaki kutuya yapıştırıp butona basın.</li>
-            </ol>
-        </div>
-
-        <div class="input-group">
-            <label for="maps-input">Google Maps Linki veya 0x... Kodu:</label>
-            <textarea id="maps-input" rows="3" placeholder="https://www.google.com/maps/place/..."></textarea>
-        </div>
-        <button id="btn-submit" onclick="generateNFCLink()">Uygulama İçi Yorum Linki Üret</button>
-
-        <div id="result" class="result-box">
-            <label>NFC Kartına Yazılacak Kesin Link:</label>
-            <div id="output-url" class="result-url"></div>
-            <button class="btn-copy" onclick="copyLink()">Linki Kopyala</button>
-
-            <div class="qr-container">
-                <label style="margin-bottom: 8px;">QR Kod Önizleme:</label>
-                <br>
-                <img id="qr-image" src="" alt="QR Kodu" width="160" height="160">
-            </div>
-        </div>
-    </div>
+    <div class="spinner"></div>
+    <h3>Google Haritalar Açılıyor...</h3>
+    <p>Açılmazsa aşağıdaki butona dokunun:</p>
+    <a id="fallback-btn" href="#">Yorumları Aç</a>
 
     <script>
-        let basePath = window.location.pathname;
-        if (!basePath.endsWith('/')) {
-            basePath += '/';
-        }
-        const currentDomain = window.location.origin + basePath;
-
-        // --- YÖNLENDİRME MODU ---
-        const urlParams = new URLSearchParams(window.location.search);
-        const dataParam = urlParams.get('data');
-
-        if (dataParam) {
-            document.getElementById('redirect-view').style.display = 'block';
-            document.getElementById('generator-view').style.display = 'none';
-
-            let targetUrl = "";
-            const isAndroid = /android/i.test(navigator.userAgent || navigator.vendor || window.opera);
-
-            if (isAndroid) {
-                // ANDROID: %100 Haritalar uygulamasının İÇİNDE YORUMLAR/YILDIZLAR panelini açar
-                targetUrl = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
-            } else {
-                // APPLE (iOS): Hata vermeden Safari/Haritalar üzerinden yorum sekmesini açar
-                targetUrl = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1`;
-            }
-
-            const btn = document.getElementById("redirect-btn");
-            btn.href = targetUrl;
-            window.location.href = targetUrl;
-        } else {
-            document.getElementById('generator-view').style.display = 'block';
-            document.getElementById('redirect-view').style.display = 'none';
-        }
-
-        // --- LİNK ÜRETİCİ ---
-        function generateNFCLink() {
-            let text = document.getElementById('maps-input').value.trim();
-            if (!text) {
-                alert("Lütfen bir link yapıştırın.");
-                return;
-            }
-
-            // Metin içinden 0x...:0x... data kodunu ayıkla
-            const dataMatch = text.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/) || text.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
-
-            if (dataMatch) {
-                const hexData = dataMatch[1] || dataMatch[0];
-                const finalUrl = `${currentDomain}?data=${hexData}`;
-
-                document.getElementById('output-url').innerText = finalUrl;
-                document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalUrl)}`;
-                document.getElementById('result').style.display = 'block';
-            } else {
-                alert("Yapıştırdığınız linkte işletme kimliği (0x...:0x...) bulunamadı.\n\nLütfen tarayıcıda işletmeyi açıp üstteki tam linki kopyalayın.");
-            }
-        }
-
-        function copyLink() {
-            const urlText = document.getElementById('output-url').innerText;
-            navigator.clipboard.writeText(urlText).then(() => {
-                alert("NFC Linki panoya kopyalandı!");
-            });
+        // Yedek buton linki tanımlama
+        if (dataId) {
+            const isAndroid = /android/i.test(navigator.userAgent);
+            const target = isAndroid 
+                ? `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`
+                : `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`;
+            document.getElementById('fallback-btn').href = target;
         }
     </script>
 </body>
