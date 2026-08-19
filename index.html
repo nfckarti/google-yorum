@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google Yorumu Bırakın</title>
+<style>
+  body {
+    font-family: -apple-system, Roboto, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background: #f5f7fa;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e0e0e0;
+    border-top: 4px solid #4285F4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  p {
+    color: #333;
+    font-size: 16px;
+  }
+  a {
+    color: #4285F4;
+    text-decoration: none;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<div class="spinner"></div>
+<p>Google yorum sayfasına yönlendiriliyorsunuz...</p>
+<p id="fallback" style="display:none;">
+  Otomatik yönlendirme olmadıysa <a id="manualLink" href="#">buraya tıklayın</a>.
+</p>
+
+<script>
+  // İşletmenin Google Place ID'si
+  var placeId = "ChIJFcqAPeCxyhQRZlhlLh350xY";
+
+  // Standart Google yorum linki (Android ve fallback için)
+  var httpsUrl = "https://search.google.com/local/writereview?placeid=" + placeId;
+
+  // iOS Chrome özel şema linki
+  var chromeSchemeUrl = "googlechromes://search.google.com/local/writereview?placeid=" + placeId;
+
+  var userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  var isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+
+  // Manuel link (yönlendirme çalışmazsa gösterilecek)
+  document.getElementById("manualLink").href = httpsUrl;
+
+  if (isIOS) {
+    // iOS: önce Chrome şemasını dene
+    window.location.href = chromeSchemeUrl;
+
+    // Chrome yüklü değilse veya açılmazsa, kısa süre sonra normal linke düş
+    setTimeout(function () {
+      document.getElementById("fallback").style.display = "block";
+      window.location.href = httpsUrl;
+    }, 1500);
+  } else {
+    // Android ve diğer platformlar: doğrudan normal link
+    window.location.href = httpsUrl;
+    setTimeout(function () {
+      document.getElementById("fallback").style.display = "block";
+    }, 1500);
+  }
+</script>
+
+</body>
+</html>
