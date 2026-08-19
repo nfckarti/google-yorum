@@ -74,6 +74,7 @@
             box-sizing: border-box;
         }
         button:hover, .btn:hover { background-color: var(--primary-hover); }
+        button:disabled { background-color: #9aa0a6; cursor: not-allowed; }
         .result-box {
             display: none;
             margin-top: 24px;
@@ -119,24 +120,24 @@
     <!-- 1. MÜŞTERİ YÖNLENDİRME EKRANI (NFC Okutulunca) -->
     <div id="redirect-view" class="container">
         <div class="spinner"></div>
-        <h2>Google Yorumları Açılıyor...</h2>
-        <p>Doğrudan açılmazsa aşağıdaki butona tıklayın:</p>
+        <h2>Google Haritalar Yorumları Açılıyor...</h2>
+        <p>Uygulama otomatik açılmazsa aşağıdaki butona tıklayın:</p>
         <a id="redirect-btn" class="btn" href="#">Yorum Yaz / Puan Ver</a>
     </div>
 
-    <!-- 2. LİNK OLUŞTURUCU PANELİ (Siz Açtığınızda) -->
+    <!-- 2. LİNK OLUŞTURUCU PANELİ -->
     <div id="generator-view" class="container">
         <h1>NFC Google Yorum Linki Üretici</h1>
-        <p>Haritalarda işletmenin <b>Yorumlar</b> sekmesindeki linki veya <b>g.page/.../review</b> linkini yapıştırın.</p>
+        <p>Google Haritalar uygulamasından <b>Paylaş</b> diyerek kopyaladığınız linki yapıştırın.</p>
 
         <div class="input-group">
-            <label for="maps-input">Google Yorum Linki:</label>
-            <textarea id="maps-input" rows="3" placeholder="Tarayıcıdan kopyalanan Maps linki veya g.page/r/.../review"></textarea>
+            <label for="maps-input">Haritalar Paylaşım Linki:</label>
+            <textarea id="maps-input" rows="3" placeholder="Google Maps uygulamasından paylaşılan link"></textarea>
         </div>
-        <button onclick="generateNFCLink()">Doğrudan Yorum NFC Linki Üret</button>
+        <button id="btn-submit" onclick="generateNFCLink()">Yorum NFC Linki Üret</button>
 
         <div id="result" class="result-box">
-            <label>NFC Kartına Kaydedilecek Link:</label>
+            <label>NFC Kartına Kaydedilecek Akıllı Link:</label>
             <div id="output-url" class="result-url"></div>
             <button class="btn-copy" onclick="copyLink()">Linki Kopyala</button>
 
@@ -159,9 +160,9 @@
         const urlParams = new URLSearchParams(window.location.search);
         const dataParam = urlParams.get('data');
         const placeIdParam = urlParams.get('placeid');
-        const reviewParam = urlParams.get('r'); // g.page/r/... linkleri için
+        const urlParam = urlParams.get('url');
 
-        const isRedirectMode = Boolean(dataParam || placeIdParam || reviewParam);
+        const isRedirectMode = Boolean(dataParam || placeIdParam || urlParam);
 
         if (isRedirectMode) {
             document.getElementById('redirect-view').style.display = 'block';
@@ -171,23 +172,16 @@
             const isAndroid = /android/i.test(navigator.userAgent || navigator.vendor || window.opera);
 
             if (dataParam) {
-                // !9m1!1b1 komutu ile Haritalar uygulamasında DOĞRUDAN YORUMLAR SEKME VE YILDIZLARI açar
+                // Haritalar uygulamasında YORUMLAR / YILDIZ sekmesini açar
                 if (isAndroid) {
                     targetUrl = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
                 } else {
                     targetUrl = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1`;
                 }
             } else if (placeIdParam) {
-                // Place ID ile doğrudan 5 yıldız formunu açar
                 targetUrl = `https://search.google.com/local/writereview?placeid=${placeIdParam}`;
-            } else if (reviewParam) {
-                // g.page/r/... yorum linki
-                const cleanReview = decodeURIComponent(reviewParam);
-                if (isAndroid) {
-                    targetUrl = `intent://${cleanReview}#Intent;scheme=https;package=com.google.android.apps.maps;end`;
-                } else {
-                    targetUrl = `https://${cleanReview}`;
-                }
+            } else if (urlParam) {
+                targetUrl = `https://${decodeURIComponent(urlParam)}`;
             }
 
             const btn = document.getElementById("redirect-btn");
@@ -198,8 +192,9 @@
             document.getElementById('redirect-view').style.display = 'none';
         }
 
-        // --- LİNK ÜRETİCİ ---
-        function generateNFCLink() {
+        // --- LİNK ÜRETİCİ & OTOMATİK ÇÖZÜCÜ ---
+        async function generateNFCLink() {
+            const submitBtn = document.getElementById('btn-submit');
             let text = document.getElementById('maps-input').value.trim();
             if (!text) {
                 alert("Lütfen bir link yapıştırın.");
@@ -214,30 +209,44 @@
                 foundUrl = text;
             }
 
+            submitBtn.disabled = true;
+            submitBtn.innerText = "İşletme Kimliği Çözümleniyor...";
+
             let finalUrl = "";
 
-            // 1. data=!1s(0x...:0x...) yakalama
-            const dataMatch = foundUrl.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/) || foundUrl.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
-            // 2. g.page/r/.../review yakalama
-            const gpageMatch = foundUrl.match(/g\.page\/r\/([a-zA-Z0-9_\-]+)\/?review?/i) || foundUrl.match(/g\.page\/([a-zA-Z0-9_\-]+)/i);
-            // 3. placeid yakalama
-            const placeIdMatch = foundUrl.match(/placeid=([a-zA-Z0-9_\-]+)/i) || (foundUrl.startsWith("ChIJ") ? [null, foundUrl] : null);
+            try {
+                // Doğrudan hex kodu veya data içeriyor mu kontrol et
+                let dataMatch = foundUrl.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/) || foundUrl.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
 
-            if (dataMatch) {
-                finalUrl = `${currentDomain}?data=${dataMatch[1]}`;
-            } else if (gpageMatch) {
-                const cleanGpage = foundUrl.replace(/^https?:\/\//i, '');
-                finalUrl = `${currentDomain}?r=${encodeURIComponent(cleanGpage)}`;
-            } else if (placeIdMatch) {
-                finalUrl = `${currentDomain}?placeid=${placeIdMatch[1]}`;
-            } else {
-                alert("Doğrudan yorum sekmesini açabilmek için lütfen tarayıcıda işletmeyi açıp 'Yorumlar' sekmesine tıklayın ve linki öyle kopyalayın.");
-                return;
+                // Eğer maps.app.goo.gl veya goo.gl kısa linkiyse arka planda çöz
+                if (!dataMatch && (foundUrl.includes("maps.app.goo.gl") || foundUrl.includes("goo.gl"))) {
+                    try {
+                        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(foundUrl)}`);
+                        const json = await res.json();
+                        if (json && json.contents) {
+                            dataMatch = json.contents.match(/0x[0-9a-fA-F]{14,18}:0x[0-9a-fA-F]{14,18}/);
+                        }
+                    } catch (e) {
+                        console.log("Kısa link çözümleme hatası:", e);
+                    }
+                }
+
+                if (dataMatch) {
+                    finalUrl = `${currentDomain}?data=${dataMatch[1] || dataMatch[0]}`;
+                } else {
+                    // Bulunamazsa evrensel URL fallback
+                    const clean = foundUrl.replace(/^https?:\/\//i, '');
+                    finalUrl = `${currentDomain}?url=${encodeURIComponent(clean)}`;
+                }
+
+                document.getElementById('output-url').innerText = finalUrl;
+                document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalUrl)}`;
+                document.getElementById('result').style.display = 'block';
+
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Yorum NFC Linki Üret";
             }
-
-            document.getElementById('output-url').innerText = finalUrl;
-            document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalUrl)}`;
-            document.getElementById('result').style.display = 'block';
         }
 
         function copyLink() {
