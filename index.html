@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google Yorum NFC Yöneticisi</title>
+    <script>
+        // GitHub Pages yönlendirme sırasında parametrelerin silinmesini önleyen koruma
+        const path = window.location.pathname;
+        if (!path.endsWith('/') && !path.includes('.')) {
+            window.location.replace(window.location.origin + path + '/' + window.location.search);
+        }
+    </script>
     <style>
         :root {
             --primary: #1a73e8;
@@ -124,7 +131,7 @@
             padding: 8px;
         }
 
-        #redirect-view {
+        #redirect-view, #generator-view {
             display: none;
         }
         .spinner {
@@ -149,17 +156,17 @@
         <div class="spinner"></div>
         <h2>Google Haritalar Açılıyor...</h2>
         <p>Uygulama otomatik açılmazsa aşağıdaki butona tıklayın:</p>
-        <a id="redirect-btn" class="btn" href="#">Yorum Yaz / Haritada Aç</a>
+        <a id="redirect-btn" class="btn" href="#">Haritada / Yorumlarda Aç</a>
     </div>
 
     <!-- 2. LİNK OLUŞTURUCU PANELİ (Siz Açtığınızda) -->
     <div id="generator-view" class="container">
         <h1>NFC Link Oluşturucu</h1>
-        <p>Google Maps uygulamasından kopyaladığınız her türlü linki veya metni buraya yapıştırabilirsiniz.</p>
+        <p>Google Maps uygulamasından aldığınız linki veya metni yapıştırıp NFC kartına yazılacak linki üretin.</p>
 
         <div class="input-group">
             <label for="maps-input">Google Maps Paylaşım Linki veya Metni:</label>
-            <textarea id="maps-input" rows="3" placeholder="Örn: https://maps.app.goo.gl/..."></textarea>
+            <textarea id="maps-input" rows="3" placeholder="https://maps.app.goo.gl/..."></textarea>
         </div>
         <button onclick="generateNFCLink()">NFC Linki Üret</button>
 
@@ -177,18 +184,25 @@
     </div>
 
     <script>
-        const currentDomain = window.location.origin + window.location.pathname;
+        // Bölü işareti garantili taban domain
+        let basePath = window.location.pathname;
+        if (!basePath.endsWith('/')) {
+            basePath += '/';
+        }
+        const currentDomain = window.location.origin + basePath;
 
-        // --- YÖNLENDİRME MODU ---
+        // --- YÖNLENDİRME KONTROLÜ ---
         const urlParams = new URLSearchParams(window.location.search);
         const dataParam = urlParams.get('data');
         const placeIdParam = urlParams.get('placeid');
         const cidParam = urlParams.get('cid');
         const urlParam = urlParams.get('url');
 
-        if (dataParam || placeIdParam || cidParam || urlParam) {
-            document.getElementById('generator-view').style.display = 'none';
+        const isRedirectMode = Boolean(dataParam || placeIdParam || cidParam || urlParam);
+
+        if (isRedirectMode) {
             document.getElementById('redirect-view').style.display = 'block';
+            document.getElementById('generator-view').style.display = 'none';
 
             let androidTarget = "";
             let appleTarget = "";
@@ -203,7 +217,7 @@
                 androidTarget = `intent://maps.google.com/?cid=${cidParam}#Intent;scheme=https;package=com.google.android.apps.maps;end`;
                 appleTarget = `https://maps.google.com/?cid=${cidParam}`;
             } else if (urlParam) {
-                const cleanUrl = decodeURIComponent(urlParam);
+                const cleanUrl = urlParam.replace(/^https?:\/\//i, '');
                 androidTarget = `intent://${cleanUrl}#Intent;scheme=https;package=com.google.android.apps.maps;end`;
                 appleTarget = `https://${cleanUrl}`;
             }
@@ -219,6 +233,10 @@
                 btn.href = appleTarget;
                 window.location.href = appleTarget;
             }
+        } else {
+            // Parametre yoksa Link Oluşturucu Panelini Göster
+            document.getElementById('generator-view').style.display = 'block';
+            document.getElementById('redirect-view').style.display = 'none';
         }
 
         // --- LİNK ÜRETİCİ ---
@@ -229,7 +247,6 @@
                 return;
             }
 
-            // Metin içerisindeki URL'yi ayıkla
             let foundUrl = "";
             const urlMatch = text.match(/https?:\/\/[^\s]+/i);
             if (urlMatch) {
@@ -253,7 +270,6 @@
             } else if (foundUrl.startsWith("0x") && foundUrl.includes(":")) {
                 finalUrl = `${currentDomain}?data=${foundUrl}`;
             } else {
-                // Kısa linkler (maps.app.goo.gl vb.) veya her türlü Google linki için genel fallback
                 const clean = foundUrl.replace(/^https?:\/\//i, '');
                 finalUrl = `${currentDomain}?url=${encodeURIComponent(clean)}`;
             }
