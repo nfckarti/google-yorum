@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google Yorum NFC Yöneticisi</title>
     <script>
-        // Trailing slash koruması
         const path = window.location.pathname;
         if (!path.endsWith('/') && !path.includes('.')) {
             window.location.replace(window.location.origin + path + '/' + window.location.search);
@@ -120,24 +119,24 @@
     <!-- 1. MÜŞTERİ YÖNLENDİRME EKRANI (NFC Okutulunca) -->
     <div id="redirect-view" class="container">
         <div class="spinner"></div>
-        <h2>Google Haritalar Açılıyor...</h2>
-        <p>Uygulama otomatik açılmazsa aşağıdaki butona tıklayın:</p>
-        <a id="redirect-btn" class="btn" href="#">Yorum Yaz / Haritada Aç</a>
+        <h2>Google Yorumları Açılıyor...</h2>
+        <p>Doğrudan açılmazsa aşağıdaki butona tıklayın:</p>
+        <a id="redirect-btn" class="btn" href="#">Yorum Yaz / Puan Ver</a>
     </div>
 
     <!-- 2. LİNK OLUŞTURUCU PANELİ (Siz Açtığınızda) -->
     <div id="generator-view" class="container">
-        <h1>NFC Link Oluşturucu</h1>
-        <p>Google Maps linkini veya paylaşılan metni yapıştırıp NFC kartı için akıllı linki üretin.</p>
+        <h1>NFC Google Yorum Linki Üretici</h1>
+        <p>Haritalarda işletmenin <b>Yorumlar</b> sekmesindeki linki veya <b>g.page/.../review</b> linkini yapıştırın.</p>
 
         <div class="input-group">
-            <label for="maps-input">Google Maps Paylaşım Linki veya Metni:</label>
-            <textarea id="maps-input" rows="3" placeholder="https://maps.app.goo.gl/... veya Google Maps URL"></textarea>
+            <label for="maps-input">Google Yorum Linki:</label>
+            <textarea id="maps-input" rows="3" placeholder="Tarayıcıdan kopyalanan Maps linki veya g.page/r/.../review"></textarea>
         </div>
-        <button onclick="generateNFCLink()">NFC Linki Üret</button>
+        <button onclick="generateNFCLink()">Doğrudan Yorum NFC Linki Üret</button>
 
         <div id="result" class="result-box">
-            <label>NFC Kartına Yazılacak Link:</label>
+            <label>NFC Kartına Kaydedilecek Link:</label>
             <div id="output-url" class="result-url"></div>
             <button class="btn-copy" onclick="copyLink()">Linki Kopyala</button>
 
@@ -160,10 +159,9 @@
         const urlParams = new URLSearchParams(window.location.search);
         const dataParam = urlParams.get('data');
         const placeIdParam = urlParams.get('placeid');
-        const cidParam = urlParams.get('cid');
-        const urlParam = urlParams.get('url');
+        const reviewParam = urlParams.get('r'); // g.page/r/... linkleri için
 
-        const isRedirectMode = Boolean(dataParam || placeIdParam || cidParam || urlParam);
+        const isRedirectMode = Boolean(dataParam || placeIdParam || reviewParam);
 
         if (isRedirectMode) {
             document.getElementById('redirect-view').style.display = 'block';
@@ -173,26 +171,29 @@
             const isAndroid = /android/i.test(navigator.userAgent || navigator.vendor || window.opera);
 
             if (dataParam) {
-                // Uzun data linki -> Android'de doğrudan Intent ile Yorum sekmesini aç
+                // !9m1!1b1 komutu ile Haritalar uygulamasında DOĞRUDAN YORUMLAR SEKME VE YILDIZLARI açar
                 if (isAndroid) {
                     targetUrl = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
                 } else {
                     targetUrl = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1`;
                 }
             } else if (placeIdParam) {
+                // Place ID ile doğrudan 5 yıldız formunu açar
                 targetUrl = `https://search.google.com/local/writereview?placeid=${placeIdParam}`;
-            } else if (cidParam) {
-                targetUrl = `https://maps.google.com/?cid=${cidParam}`;
-            } else if (urlParam) {
-                // Kısa linkler (maps.app.goo.gl) -> Her iki işletim sisteminde de doğrudan HTTPS linki açılır, Play Store hatası vermez
-                targetUrl = `https://${decodeURIComponent(urlParam)}`;
+            } else if (reviewParam) {
+                // g.page/r/... yorum linki
+                const cleanReview = decodeURIComponent(reviewParam);
+                if (isAndroid) {
+                    targetUrl = `intent://${cleanReview}#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+                } else {
+                    targetUrl = `https://${cleanReview}`;
+                }
             }
 
             const btn = document.getElementById("redirect-btn");
             btn.href = targetUrl;
             window.location.href = targetUrl;
         } else {
-            // Parametre yok -> Panel Aç
             document.getElementById('generator-view').style.display = 'block';
             document.getElementById('redirect-view').style.display = 'none';
         }
@@ -215,21 +216,23 @@
 
             let finalUrl = "";
 
-            const dataMatch = foundUrl.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
+            // 1. data=!1s(0x...:0x...) yakalama
+            const dataMatch = foundUrl.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/) || foundUrl.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
+            // 2. g.page/r/.../review yakalama
+            const gpageMatch = foundUrl.match(/g\.page\/r\/([a-zA-Z0-9_\-]+)\/?review?/i) || foundUrl.match(/g\.page\/([a-zA-Z0-9_\-]+)/i);
+            // 3. placeid yakalama
             const placeIdMatch = foundUrl.match(/placeid=([a-zA-Z0-9_\-]+)/i) || (foundUrl.startsWith("ChIJ") ? [null, foundUrl] : null);
-            const cidMatch = foundUrl.match(/cid=([0-9]+)/i);
 
             if (dataMatch) {
                 finalUrl = `${currentDomain}?data=${dataMatch[1]}`;
+            } else if (gpageMatch) {
+                const cleanGpage = foundUrl.replace(/^https?:\/\//i, '');
+                finalUrl = `${currentDomain}?r=${encodeURIComponent(cleanGpage)}`;
             } else if (placeIdMatch) {
                 finalUrl = `${currentDomain}?placeid=${placeIdMatch[1]}`;
-            } else if (cidMatch) {
-                finalUrl = `${currentDomain}?cid=${cidMatch[1]}`;
-            } else if (foundUrl.startsWith("0x") && foundUrl.includes(":")) {
-                finalUrl = `${currentDomain}?data=${foundUrl}`;
             } else {
-                const clean = foundUrl.replace(/^https?:\/\//i, '');
-                finalUrl = `${currentDomain}?url=${encodeURIComponent(clean)}`;
+                alert("Doğrudan yorum sekmesini açabilmek için lütfen tarayıcıda işletmeyi açıp 'Yorumlar' sekmesine tıklayın ve linki öyle kopyalayın.");
+                return;
             }
 
             document.getElementById('output-url').innerText = finalUrl;
