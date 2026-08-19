@@ -44,6 +44,17 @@
         }
         h1, h2 { margin-top: 0; color: var(--text); }
         p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+        .guide-box {
+            background: #e8f0fe;
+            border: 1px solid #d2e3fc;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: left;
+            font-size: 13px;
+            color: #174ea6;
+            margin-bottom: 20px;
+        }
+        .guide-box ol { margin: 8px 0 0 18px; padding: 0; }
         .input-group { margin: 20px 0; text-align: left; }
         label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
         textarea {
@@ -74,7 +85,6 @@
             box-sizing: border-box;
         }
         button:hover, .btn:hover { background-color: var(--primary-hover); }
-        button:disabled { background-color: #9aa0a6; cursor: not-allowed; }
         .result-box {
             display: none;
             margin-top: 24px;
@@ -120,24 +130,32 @@
     <!-- 1. MÜŞTERİ YÖNLENDİRME EKRANI (NFC Okutulunca) -->
     <div id="redirect-view" class="container">
         <div class="spinner"></div>
-        <h2>Google Haritalar Yorumları Açılıyor...</h2>
-        <p>Uygulama otomatik açılmazsa aşağıdaki butona tıklayın:</p>
+        <h2>Google Haritalar Uygulaması Açılıyor...</h2>
+        <p>Doğrudan açılmazsa aşağıdaki butona tıklayın:</p>
         <a id="redirect-btn" class="btn" href="#">Yorum Yaz / Puan Ver</a>
     </div>
 
     <!-- 2. LİNK OLUŞTURUCU PANELİ -->
     <div id="generator-view" class="container">
         <h1>NFC Google Yorum Linki Üretici</h1>
-        <p>Google Haritalar uygulamasından <b>Paylaş</b> diyerek kopyaladığınız linki yapıştırın.</p>
+        
+        <div class="guide-box">
+            <b>💡 Doğrudan Uygulama İçi Yıldız Ekranı İçin:</b>
+            <ol>
+                <li>Tarayıcıda Google Haritalar'ı açıp işletmeyi bulun.</li>
+                <li>Adres çubuğundaki uzun linki (veya 0x...:0x... kodunu) kopyalayın.</li>
+                <li>Aşağıdaki kutuya yapıştırıp butona basın.</li>
+            </ol>
+        </div>
 
         <div class="input-group">
-            <label for="maps-input">Haritalar Paylaşım Linki:</label>
-            <textarea id="maps-input" rows="3" placeholder="Google Maps uygulamasından paylaşılan link"></textarea>
+            <label for="maps-input">Google Maps Linki veya 0x... Kodu:</label>
+            <textarea id="maps-input" rows="3" placeholder="https://www.google.com/maps/place/..."></textarea>
         </div>
-        <button id="btn-submit" onclick="generateNFCLink()">Yorum NFC Linki Üret</button>
+        <button id="btn-submit" onclick="generateNFCLink()">Uygulama İçi Yorum Linki Üret</button>
 
         <div id="result" class="result-box">
-            <label>NFC Kartına Kaydedilecek Akıllı Link:</label>
+            <label>NFC Kartına Yazılacak Kesin Link:</label>
             <div id="output-url" class="result-url"></div>
             <button class="btn-copy" onclick="copyLink()">Linki Kopyala</button>
 
@@ -159,29 +177,20 @@
         // --- YÖNLENDİRME MODU ---
         const urlParams = new URLSearchParams(window.location.search);
         const dataParam = urlParams.get('data');
-        const placeIdParam = urlParams.get('placeid');
-        const urlParam = urlParams.get('url');
 
-        const isRedirectMode = Boolean(dataParam || placeIdParam || urlParam);
-
-        if (isRedirectMode) {
+        if (dataParam) {
             document.getElementById('redirect-view').style.display = 'block';
             document.getElementById('generator-view').style.display = 'none';
 
             let targetUrl = "";
             const isAndroid = /android/i.test(navigator.userAgent || navigator.vendor || window.opera);
 
-            if (dataParam) {
-                // Haritalar uygulamasında YORUMLAR / YILDIZ sekmesini açar
-                if (isAndroid) {
-                    targetUrl = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
-                } else {
-                    targetUrl = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1`;
-                }
-            } else if (placeIdParam) {
-                targetUrl = `https://search.google.com/local/writereview?placeid=${placeIdParam}`;
-            } else if (urlParam) {
-                targetUrl = `https://${decodeURIComponent(urlParam)}`;
+            if (isAndroid) {
+                // ANDROID: %100 Haritalar uygulamasının İÇİNDE YORUMLAR/YILDIZLAR panelini açar
+                targetUrl = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+            } else {
+                // APPLE (iOS): Hata vermeden Safari/Haritalar üzerinden yorum sekmesini açar
+                targetUrl = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataParam}!9m1!1b1`;
             }
 
             const btn = document.getElementById("redirect-btn");
@@ -192,60 +201,26 @@
             document.getElementById('redirect-view').style.display = 'none';
         }
 
-        // --- LİNK ÜRETİCİ & OTOMATİK ÇÖZÜCÜ ---
-        async function generateNFCLink() {
-            const submitBtn = document.getElementById('btn-submit');
+        // --- LİNK ÜRETİCİ ---
+        function generateNFCLink() {
             let text = document.getElementById('maps-input').value.trim();
             if (!text) {
                 alert("Lütfen bir link yapıştırın.");
                 return;
             }
 
-            let foundUrl = "";
-            const urlMatch = text.match(/https?:\/\/[^\s]+/i);
-            if (urlMatch) {
-                foundUrl = urlMatch[0];
-            } else {
-                foundUrl = text;
-            }
+            // Metin içinden 0x...:0x... data kodunu ayıkla
+            const dataMatch = text.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/) || text.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
 
-            submitBtn.disabled = true;
-            submitBtn.innerText = "İşletme Kimliği Çözümleniyor...";
-
-            let finalUrl = "";
-
-            try {
-                // Doğrudan hex kodu veya data içeriyor mu kontrol et
-                let dataMatch = foundUrl.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/) || foundUrl.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
-
-                // Eğer maps.app.goo.gl veya goo.gl kısa linkiyse arka planda çöz
-                if (!dataMatch && (foundUrl.includes("maps.app.goo.gl") || foundUrl.includes("goo.gl"))) {
-                    try {
-                        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(foundUrl)}`);
-                        const json = await res.json();
-                        if (json && json.contents) {
-                            dataMatch = json.contents.match(/0x[0-9a-fA-F]{14,18}:0x[0-9a-fA-F]{14,18}/);
-                        }
-                    } catch (e) {
-                        console.log("Kısa link çözümleme hatası:", e);
-                    }
-                }
-
-                if (dataMatch) {
-                    finalUrl = `${currentDomain}?data=${dataMatch[1] || dataMatch[0]}`;
-                } else {
-                    // Bulunamazsa evrensel URL fallback
-                    const clean = foundUrl.replace(/^https?:\/\//i, '');
-                    finalUrl = `${currentDomain}?url=${encodeURIComponent(clean)}`;
-                }
+            if (dataMatch) {
+                const hexData = dataMatch[1] || dataMatch[0];
+                const finalUrl = `${currentDomain}?data=${hexData}`;
 
                 document.getElementById('output-url').innerText = finalUrl;
                 document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalUrl)}`;
                 document.getElementById('result').style.display = 'block';
-
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Yorum NFC Linki Üret";
+            } else {
+                alert("Yapıştırdığınız linkte işletme kimliği (0x...:0x...) bulunamadı.\n\nLütfen tarayıcıda işletmeyi açıp üstteki tam linki kopyalayın.");
             }
         }
 
