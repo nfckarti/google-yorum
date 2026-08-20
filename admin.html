@@ -31,7 +31,6 @@
             border: 1px solid #e0e0e0;
             text-align: center;
         }
-        /* Sekmeler (Tabs) */
         .tabs {
             display: flex;
             background: #f1f3f4;
@@ -129,7 +128,6 @@
     <div class="card">
         <h2 style="margin-top: 0;">NFC Kart Oluşturucu</h2>
         
-        <!-- Sekme Başlıkları -->
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('google')">⭐ Google Yorum</button>
             <button class="tab-btn" onclick="switchTab('instagram')">📸 Instagram</button>
@@ -178,7 +176,6 @@
             }
         }
 
-        // --- GOOGLE LINK ÜRETİCİ ---
         async function generateGoogleLink() {
             const input = document.getElementById('google-input').value.trim();
             const btn = document.getElementById('btn-google-submit');
@@ -193,7 +190,6 @@
             if (directMatch) {
                 hexData = directMatch[1] || directMatch[0];
             } else {
-                // Kısa linki arka planda çöz
                 const urlMatch = input.match(/(https?:\/\/[^\s]+)/);
                 const target = urlMatch ? urlMatch[0] : input;
                 hexData = await resolveShortLink(target);
@@ -220,6 +216,12 @@
                 }
             } catch(e){}
             try {
+                const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+                const text = await res.text();
+                const m = text.match(/0x[0-9a-fA-F]{14,18}:0x[0-9a-fA-F]{14,18}/);
+                if (m) return m[0];
+            } catch(e){}
+            try {
                 const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
                 const data = await res.json();
                 if (data && data.contents) {
@@ -230,7 +232,6 @@
             return null;
         }
 
-        // --- INSTAGRAM LINK ÜRETİCİ ---
         function generateInstaLink() {
             let input = document.getElementById('insta-input').value.trim();
             if (!input) return alert("Lütfen kullanıcı adını girin!");
