@@ -3,33 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Profili Açılıyor...</title>
+    <title>Yönlendiriliyorsunuz...</title>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const username = urlParams.get('u');
+        const dataId = urlParams.get('d');     // Google Maps parametresi
+        const username = urlParams.get('u');   // Instagram parametresi
 
-        if (username) {
-            const isAndroid = /android/i.test(navigator.userAgent);
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isAndroid = /android/i.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
+        if (dataId) {
+            // --- 1. GOOGLE YORUM YÖNLENDİRMESİ ---
             if (isAndroid) {
-                // ANDROID: Resmi Instagram Uygulamasını Açar
-                const androidIntent = `intent://instagram.com/_u/${username}/#Intent;package=com.instagram.android;scheme=https;end`;
-                window.location.replace(androidIntent);
+                window.location.replace(`intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`);
+            } else {
+                window.location.replace(`https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`);
+            }
+        } else if (username) {
+            // --- 2. INSTAGRAM PROFİL YÖNLENDİRMESİ ---
+            if (isAndroid) {
+                window.location.replace(`intent://instagram.com/_u/${username}/#Intent;package=com.instagram.android;scheme=https;end`);
             } else if (isIOS) {
-                // APPLE (iOS): Resmi Instagram Uygulamasını Açar
                 window.location.replace(`instagram://user?username=${username}`);
-                
-                // Eğer cihazda Instagram uygulaması yüklü değilse 1 saniye sonra Safari'de açar
                 setTimeout(() => {
                     window.location.replace(`https://www.instagram.com/${username}/`);
                 }, 1000);
             } else {
-                // Bilgisayar / Diğer
                 window.location.replace(`https://www.instagram.com/${username}/`);
             }
         } else {
-            // Parametre yoksa panele gönder
+            // Parametre yoksa Yönetim Paneline git
             window.location.replace("admin.html");
         }
     </script>
@@ -42,24 +45,23 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background: #fafafa;
+            background: #f8f9fa;
             text-align: center;
         }
         .spinner {
-            width: 45px;
-            height: 45px;
-            border: 4px solid #dbdbdb;
-            border-top: 4px solid #dc2743;
+            width: 44px;
+            height: 44px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid #1a73e8;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         a {
-            display: inline-block;
             margin-top: 15px;
             padding: 10px 20px;
-            background: linear-gradient(45deg, #f09433, #dc2743, #bc1888);
+            background: #1a73e8;
             color: white;
             text-decoration: none;
             border-radius: 8px;
@@ -69,17 +71,20 @@
 </head>
 <body>
     <div class="spinner"></div>
-    <h3>Instagram Uygulaması Açılıyor...</h3>
+    <h3>Uygulama Açılıyor...</h3>
     <p>Açılmazsa aşağıdaki butona dokunun:</p>
-    <a id="btn" href="#">Profili Görüntüle</a>
+    <a id="btn" href="#">Aç</a>
 
     <script>
-        if (username) {
-            const isAndroid = /android/i.test(navigator.userAgent);
-            const target = isAndroid 
+        // Yedek buton
+        if (dataId) {
+            document.getElementById('btn').href = isAndroid 
+                ? `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`
+                : `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`;
+        } else if (username) {
+            document.getElementById('btn').href = isAndroid 
                 ? `intent://instagram.com/_u/${username}/#Intent;package=com.instagram.android;scheme=https;end`
                 : `https://www.instagram.com/${username}/`;
-            document.getElementById('btn').href = target;
         }
     </script>
 </body>
