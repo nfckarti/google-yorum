@@ -5,68 +5,144 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönlendiriliyorsunuz...</title>
     <style>
+        * { box-sizing: border-box; }
         body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #fafafa;
+            background: #f8f9fa;
+            text-align: center;
+        }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 35px 25px;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+            border: 1px solid #eaeaea;
         }
         .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e0e0e0;
-            border-top: 4px solid #1a73e8;
+            width: 44px;
+            height: 44px;
+            border: 4px solid #f3f3f3;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        h3 { margin: 0 0 8px; color: #202124; font-size: 19px; }
+        p { margin: 0 0 24px; color: #5f6368; font-size: 14px; }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            text-decoration: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: transform 0.1s;
+        }
+        .btn:active { transform: scale(0.98); }
+        
+        .btn-google {
+            background: #1a73e8;
+            border-top: 4px solid #1a73e8;
+        }
+        .btn-insta {
+            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+            border-top: 4px solid #dc2743;
         }
     </style>
 </head>
-<body>
-    <div class="spinner"></div>
+<body onclick="triggerRedirect()">
+
+    <div class="card">
+        <div id="spinner" class="spinner"></div>
+        <h3 id="title">Uygulama Açılıyor...</h3>
+        <p id="desc">Lütfen bekleyin veya aşağıdaki butona dokunun:</p>
+        <a id="action-btn" class="btn" href="#">Aç</a>
+    </div>
 
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const dataId = urlParams.get('d');     // Google Maps parametresi
-        const username = urlParams.get('u');   // Instagram parametresi
+        const dataId = urlParams.get('d');
+        const username = urlParams.get('u');
 
         const isAndroid = /android/i.test(navigator.userAgent);
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
+        let appTarget = "";
+        let webTarget = "";
+
         if (dataId) {
-            // GOOGLE MAPS YÖNLENDİRMESİ
+            // GOOGLE MAPS
+            document.getElementById('title').innerText = "Google Haritalar";
+            document.getElementById('desc').innerText = "Yorum sekmesine aktarılıyorsunuz...";
+            document.getElementById('spinner').style.borderTopColor = "#1a73e8";
+            
+            const btn = document.getElementById('action-btn');
+            btn.className = "btn btn-google";
+            btn.innerText = "⭐ Yorum Yap";
+
             if (isAndroid) {
-                window.location.replace(`intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;category=android.intent.category.BROWSABLE;end`);
+                appTarget = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+                webTarget = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`;
             } else {
-                window.location.replace(`https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`);
+                appTarget = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`;
+                webTarget = appTarget;
             }
         } else if (username) {
-            // INSTAGRAM YÖNLENDİRMESİ
-            if (isAndroid) {
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = `instagram://user?username=${username}`;
-                document.body.appendChild(iframe);
+            // INSTAGRAM
+            document.getElementById('title').innerText = "@" + username;
+            document.getElementById('desc').innerText = "Instagram profili açılıyor...";
+            document.getElementById('spinner').style.borderTopColor = "#dc2743";
+            
+            const btn = document.getElementById('action-btn');
+            btn.className = "btn btn-insta";
+            btn.innerText = "📸 Profili Görüntüle";
 
-                setTimeout(() => {
-                    window.location.replace(`intent://instagram.com/_u/${username}/#Intent;package=com.instagram.android;scheme=https;category=android.intent.category.BROWSABLE;end`);
-                }, 500);
+            if (isAndroid) {
+                appTarget = `intent://instagram.com/_u/${username}/#Intent;package=com.instagram.android;scheme=https;end`;
+                webTarget = `https://www.instagram.com/${username}/`;
             } else if (isIOS) {
-                window.location.replace(`instagram://user?username=${username}`);
-                setTimeout(() => {
-                    window.location.replace(`https://www.instagram.com/${username}/`);
-                }, 1000);
+                appTarget = `instagram://user?username=${username}`;
+                webTarget = `https://www.instagram.com/${username}/`;
             } else {
-                window.location.replace(`https://www.instagram.com/${username}/`);
+                appTarget = `https://www.instagram.com/${username}/`;
+                webTarget = appTarget;
             }
         } else {
             window.location.replace("admin.html");
+        }
+
+        function triggerRedirect() {
+            if (appTarget) {
+                window.location.href = appTarget;
+            }
+        }
+
+        if (appTarget) {
+            document.getElementById('action-btn').href = appTarget;
+
+            // 1. Sayfa açılır açılmaz otomatik geçişi dene
+            window.location.href = appTarget;
+
+            // 2. iOS için app açılmazsa web yedeği
+            if (isIOS && webTarget) {
+                setTimeout(() => {
+                    window.location.href = webTarget;
+                }, 1500);
+            }
         }
     </script>
 </body>
