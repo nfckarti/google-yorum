@@ -3,25 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Yorumları</title>
+    <title>Instagram Profili Açılıyor...</title>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const dataId = urlParams.get('d');
+        const username = urlParams.get('u');
 
-        if (dataId) {
+        if (username) {
             const isAndroid = /android/i.test(navigator.userAgent);
-            let target = "";
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
             if (isAndroid) {
-                // ANDROID: Google Haritalar uygulamasında DOĞRUDAN YORUMLAR sekmesini açar
-                target = `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`;
+                // ANDROID: Resmi Instagram Uygulamasını Açar
+                const androidIntent = `intent://instagram.com/_u/${username}/#Intent;package=com.instagram.android;scheme=https;end`;
+                window.location.replace(androidIntent);
+            } else if (isIOS) {
+                // APPLE (iOS): Resmi Instagram Uygulamasını Açar
+                window.location.replace(`instagram://user?username=${username}`);
+                
+                // Eğer cihazda Instagram uygulaması yüklü değilse 1 saniye sonra Safari'de açar
+                setTimeout(() => {
+                    window.location.replace(`https://www.instagram.com/${username}/`);
+                }, 1000);
             } else {
-                // APPLE (iOS): Safari ve Haritalar'da Yorumlar sekmesini açar
-                target = `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`;
+                // Bilgisayar / Diğer
+                window.location.replace(`https://www.instagram.com/${username}/`);
             }
-
-            window.location.replace(target);
         } else {
+            // Parametre yoksa panele gönder
             window.location.replace("admin.html");
         }
     </script>
@@ -34,42 +42,43 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background: #f8f9fa;
+            background: #fafafa;
             text-align: center;
         }
         .spinner {
-            width: 42px;
-            height: 42px;
-            border: 4px solid #e0e0e0;
-            border-top: 4px solid #1a73e8;
+            width: 45px;
+            height: 45px;
+            border: 4px solid #dbdbdb;
+            border-top: 4px solid #dc2743;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         a {
+            display: inline-block;
             margin-top: 15px;
             padding: 10px 20px;
-            background: #1a73e8;
+            background: linear-gradient(45deg, #f09433, #dc2743, #bc1888);
             color: white;
             text-decoration: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="spinner"></div>
-    <h3>Google Haritalar Açılıyor...</h3>
+    <h3>Instagram Uygulaması Açılıyor...</h3>
     <p>Açılmazsa aşağıdaki butona dokunun:</p>
-    <a id="btn" href="#">Yorumları Aç</a>
+    <a id="btn" href="#">Profili Görüntüle</a>
 
     <script>
-        if (dataId) {
+        if (username) {
             const isAndroid = /android/i.test(navigator.userAgent);
             const target = isAndroid 
-                ? `intent://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1#Intent;scheme=https;package=com.google.android.apps.maps;end`
-                : `https://www.google.com/maps/place//data=!4m4!3m3!1s${dataId}!9m1!1b1`;
+                ? `intent://instagram.com/_u/${username}/#Intent;package=com.instagram.android;scheme=https;end`
+                : `https://www.instagram.com/${username}/`;
             document.getElementById('btn').href = target;
         }
     </script>
