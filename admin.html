@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram NFC Link Üretici</title>
+    <title>NFC Kart Yöneticisi</title>
     <style>
+        :root {
+            --google: #1a73e8;
+            --insta: linear-gradient(45deg, #f09433, #dc2743, #bc1888);
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #fafafa;
-            color: #262626;
+            background: #f8f9fa;
+            color: #202124;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -19,112 +23,137 @@
         }
         .card {
             background: white;
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 30px;
-            max-width: 480px;
+            max-width: 500px;
             width: 100%;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-            border: 1px solid #dbdbdb;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #e0e0e0;
             text-align: center;
         }
-        .insta-logo {
-            width: 50px;
-            height: 50px;
-            margin-bottom: 10px;
-        }
-        h2 { margin: 10px 0 5px 0; }
-        p { color: #8e8e8e; font-size: 14px; margin-bottom: 20px; }
-        .input-box {
+        /* Sekmeler (Tabs) */
+        .tabs {
             display: flex;
-            align-items: center;
-            border: 1px solid #dbdbdb;
-            border-radius: 8px;
-            padding: 2px 10px;
-            background: #fafafa;
+            background: #f1f3f4;
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 25px;
         }
-        .prefix { font-weight: bold; color: #8e8e8e; margin-right: 5px; }
-        input[type="text"] {
-            width: 100%;
-            padding: 10px 0;
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
             border: none;
             background: transparent;
-            font-size: 15px;
+            font-weight: 600;
+            font-size: 14px;
+            color: #5f6368;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: white;
+            color: #202124;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #dadce0;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 14px;
             outline: none;
         }
-        button {
+        textarea:focus, input[type="text"]:focus {
+            border-color: #1a73e8;
+        }
+        .btn-submit {
             width: 100%;
-            background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
             color: white;
             border: none;
-            padding: 12px;
-            border-radius: 8px;
+            padding: 14px;
+            border-radius: 10px;
             font-weight: bold;
             font-size: 15px;
             margin-top: 15px;
             cursor: pointer;
-            transition: opacity 0.2s;
         }
-        button:hover { opacity: 0.9; }
+        .btn-google { background: var(--google); }
+        .btn-google:hover { background: #1557b0; }
+        .btn-insta { background: var(--insta); }
+        .btn-insta:hover { opacity: 0.9; }
+
         .result {
             display: none;
-            margin-top: 20px;
-            padding: 15px;
-            background: #fdf2f4;
-            border-radius: 8px;
-            border: 1px solid #f8d7da;
+            margin-top: 25px;
+            padding: 18px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
         }
         .url-box {
             word-break: break-all;
             background: white;
-            padding: 10px;
-            border-radius: 6px;
+            padding: 12px;
+            border-radius: 8px;
             font-family: monospace;
             font-size: 13px;
             margin: 10px 0;
-            border: 1px solid #dbdbdb;
+            border: 1px solid #dadce0;
         }
         .btn-copy {
-            background: #0095f6;
-            margin-top: 5px;
+            background: #34a853;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
         }
         .qr-box { margin-top: 15px; }
         .qr-box img {
-            border-radius: 8px;
-            border: 1px solid #dbdbdb;
+            border-radius: 10px;
+            border: 1px solid #dadce0;
             background: white;
-            padding: 5px;
+            padding: 8px;
         }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <svg class="insta-logo" viewBox="0 0 24 24">
-            <path fill="url(#ig-grad)" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-            <defs>
-                <linearGradient id="ig-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#f09433"/>
-                    <stop offset="25%" stop-color="#e6683c"/>
-                    <stop offset="50%" stop-color="#dc2743"/>
-                    <stop offset="75%" stop-color="#cc2366"/>
-                    <stop offset="100%" stop-color="#bc1888"/>
-                </linearGradient>
-            </defs>
-        </svg>
-
-        <h2>Instagram NFC Linki Üretici</h2>
-        <p>Sadece kullanıcı adını yazın veya profil linkini yapıştırın:</p>
-
-        <div class="input-box">
-            <span class="prefix">@</span>
-            <input type="text" id="ig-username" placeholder="kullanici_adi">
+        <h2 style="margin-top: 0;">NFC Kart Oluşturucu</h2>
+        
+        <!-- Sekme Başlıkları -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('google')">⭐ Google Yorum</button>
+            <button class="tab-btn" onclick="switchTab('instagram')">📸 Instagram</button>
         </div>
-        <button onclick="generateIGLink()">NFC Linki Üret</button>
 
+        <!-- GOOGLE YORUM SEKMESİ -->
+        <div id="tab-google" class="tab-content active">
+            <p style="font-size: 13px; color: #5f6368; text-align: left; margin-bottom: 8px;">Google Haritalar Paylaşım Linki:</p>
+            <textarea id="google-input" rows="3" placeholder="https://maps.app.goo.gl/..."></textarea>
+            <button id="btn-google-submit" class="btn-submit btn-google" onclick="generateGoogleLink()">Google Yorum NFC Linki Üret</button>
+        </div>
+
+        <!-- INSTAGRAM SEKMESİ -->
+        <div id="tab-instagram" class="tab-content">
+            <p style="font-size: 13px; color: #5f6368; text-align: left; margin-bottom: 8px;">Instagram Kullanıcı Adı veya Profil Linki:</p>
+            <input type="text" id="insta-input" placeholder="@kullanici_adi veya profil linki">
+            <button class="btn-submit btn-insta" onclick="generateInstaLink()">Instagram NFC Linki Üret</button>
+        </div>
+
+        <!-- SONUÇ EKRANI -->
         <div id="result-box" class="result">
-            <label style="font-weight: bold; font-size: 13px;">NFC Kartına Yazılacak Link:</label>
+            <label id="result-title" style="font-weight: bold; font-size: 14px;"></label>
             <div id="output-url" class="url-box"></div>
-            <button class="btn-copy" onclick="copyLink()">Linki Kopyala</button>
+            <button class="btn-copy" onclick="copyLink()">NFC Linkini Kopyala</button>
 
             <div class="qr-box">
                 <img id="qr-img" src="" width="150" height="150" alt="QR Kod">
@@ -133,33 +162,98 @@
     </div>
 
     <script>
-        function generateIGLink() {
-            let input = document.getElementById('ig-username').value.trim();
-            if (!input) return alert("Lütfen bir kullanıcı adı girin!");
+        const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '');
 
-            // @ işaretini temizle
-            input = input.replace(/^@/, '');
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('result-box').style.display = 'none';
 
-            // Eğer tam profil linki yapıştırıldıysa (instagram.com/kullanici) ayıkla
-            const urlMatch = input.match(/(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9_\.\-]+)/i);
-            if (urlMatch) {
-                input = urlMatch[1];
+            if (tab === 'google') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-google').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-instagram').classList.add('active');
+            }
+        }
+
+        // --- GOOGLE LINK ÜRETİCİ ---
+        async function generateGoogleLink() {
+            const input = document.getElementById('google-input').value.trim();
+            const btn = document.getElementById('btn-google-submit');
+            if (!input) return alert("Lütfen Haritalar linkini yapıştırın!");
+
+            btn.disabled = true;
+            btn.innerText = "Yorum Kodu Çözümleniyor...";
+
+            let hexData = null;
+            const directMatch = input.match(/!1s(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/) || input.match(/(0x[0-9a-fA-F]+:0x[0-9a-fA-F]+)/);
+            
+            if (directMatch) {
+                hexData = directMatch[1] || directMatch[0];
+            } else {
+                // Kısa linki arka planda çöz
+                const urlMatch = input.match(/(https?:\/\/[^\s]+)/);
+                const target = urlMatch ? urlMatch[0] : input;
+                hexData = await resolveShortLink(target);
             }
 
-            // Soru işareti ve sonundaki eğik çizgileri temizle
-            const cleanUsername = input.split('?')[0].replace(/\/$/, '').trim();
+            btn.disabled = false;
+            btn.innerText = "Google Yorum NFC Linki Üret";
 
-            const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '');
-            const finalUrl = `${baseUrl}?u=${cleanUsername}`;
+            if (hexData) {
+                const finalUrl = `${baseUrl}?d=${hexData}`;
+                showResult("⭐ Google Yorum Kartı Linki:", finalUrl);
+            } else {
+                alert("Haritalar linki çözümlenemedi. Lütfen linki kontrol edin.");
+            }
+        }
 
-            document.getElementById('output-url').innerText = finalUrl;
-            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(finalUrl)}`;
+        async function resolveShortLink(url) {
+            try {
+                const res = await fetch(`https://unshorten.me/json/${encodeURIComponent(url)}`);
+                const data = await res.json();
+                if (data && data.resolved_url) {
+                    const m = data.resolved_url.match(/0x[0-9a-fA-F]{14,18}:0x[0-9a-fA-F]{14,18}/);
+                    if (m) return m[0];
+                }
+            } catch(e){}
+            try {
+                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+                const data = await res.json();
+                if (data && data.contents) {
+                    const m = data.contents.match(/0x[0-9a-fA-F]{14,18}:0x[0-9a-fA-F]{14,18}/);
+                    if (m) return m[0];
+                }
+            } catch(e){}
+            return null;
+        }
+
+        // --- INSTAGRAM LINK ÜRETİCİ ---
+        function generateInstaLink() {
+            let input = document.getElementById('insta-input').value.trim();
+            if (!input) return alert("Lütfen kullanıcı adını girin!");
+
+            input = input.replace(/^@/, '');
+            const urlMatch = input.match(/(?:instagram\.com|instagr\.am)\/([a-zA-Z0-9_\.\-]+)/i);
+            if (urlMatch) input = urlMatch[1];
+            const cleanUser = input.split('?')[0].replace(/\/$/, '').trim();
+
+            const finalUrl = `${baseUrl}?u=${cleanUser}`;
+            showResult("📸 Instagram Profil Kartı Linki:", finalUrl);
+        }
+
+        function showResult(title, url) {
+            document.getElementById('result-title').innerText = title;
+            document.getElementById('output-url').innerText = url;
+            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
             document.getElementById('result-box').style.display = 'block';
         }
 
         function copyLink() {
             const text = document.getElementById('output-url').innerText;
-            navigator.clipboard.writeText(text).then(() => alert("Instagram NFC linki kopyalandı!"));
+            navigator.clipboard.writeText(text).then(() => alert("NFC Linki panoya kopyalandı! Kartınıza yazabilirsiniz."));
         }
     </script>
 </body>
